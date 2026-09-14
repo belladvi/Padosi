@@ -90,12 +90,17 @@ async function preload() {
   state.ready = true;
   loader.classList.add("done");
 
+  // warm-decode the opening chapters (already fetched) so the FIRST scroll is
+  // smooth instead of decoding just-in-time (the source of the initial jank)
+  const WARM = Math.min(90, count);
+  for (let i = 0; i < EAGER && i < WARM; i++) decode(i);
+
   let next = EAGER;
   await Promise.all(
     Array.from({ length: 4 }, async () => {
       while (next < count) {
         const i = next++;
-        try { await fetchBlob(i); } catch { /* refetched on demand */ }
+        try { await fetchBlob(i); if (i < WARM) decode(i); } catch { /* refetched on demand */ }
       }
     })
   );
