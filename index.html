@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Padosi — Home-cooked, from your neighbours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/webp" href="img/logo-icon.webp">
+<link rel="apple-touch-icon" href="img/logo-icon.webp">
+<style>
+  :root {
+    --bg: #0e0906;
+    --bg2: #17100a;
+    --card: #1b120c;
+    --line: rgba(246,239,231,0.10);
+    --brass: #c0603e;
+    --brass-bright: #ec9a6b;
+    --gold: #e8b981;
+    --green: #8fb36f;
+    --text: #f7f0e8;
+    --text-dim: rgba(247,240,232,0.60);
+    --serif: "Fraunces", Georgia, "Times New Roman", serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: auto; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); -webkit-font-smoothing: antialiased;
+    overflow-x: hidden; line-height: 1.5;
+  }
+  ::selection { background: var(--brass); color: #fff; }
+  h1,h2,h3 { font-family: var(--serif); font-weight: 500; }
+
+  /* ── loader ── */
+  #loader { position: fixed; inset: 0; z-index: 100; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+    transition: opacity .8s ease; }
+  #loader.done { opacity: 0; pointer-events: none; }
+  #loader .mark { font-family: var(--serif); font-size: 30px; letter-spacing: 0.02em; color: var(--text); }
+  #loader .mark b { color: var(--brass-bright); }
+  #loader .bar { width: 180px; height: 2px; background: rgba(192,96,62,0.22); overflow: hidden; border-radius: 2px; }
+  #loader .bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: linear-gradient(90deg,var(--brass),var(--gold)); display: block; transition: width .2s ease; }
+
+  /* ── scroll stage ── */
+  #track { height: 780vh; position: relative; }
+  #stage { position: sticky; top: 0; height: 100vh; width: 100%; overflow: hidden; }
+  #film { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  #vignette { position: absolute; inset: 0; z-index: 5; pointer-events: none;
+    background:
+      radial-gradient(ellipse 70% 76% at 50% 46%, transparent 46%, rgba(14,9,6,0.94) 98%),
+      linear-gradient(to right, rgba(14,9,6,0.92), transparent 15%, transparent 85%, rgba(14,9,6,0.92)),
+      linear-gradient(to bottom, rgba(14,9,6,0.6), transparent 20%, transparent 68%, rgba(14,9,6,0.85)); }
+  #grain { position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0.045; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 0.6s steps(3) infinite; }
+  @keyframes grain { 0%{transform:translate(0,0)} 33%{transform:translate(-4%,2%)} 66%{transform:translate(3%,-3%)} 100%{transform:translate(0,0)} }
+
+  /* progress rail */
+  #rail { position: fixed; right: 22px; top: 50%; transform: translateY(-50%); z-index: 40; width: 2px; height: 120px; background: rgba(247,240,232,0.12); border-radius: 2px; opacity: 0; transition: opacity .5s; }
+  #rail.on { opacity: 1; }
+  #rail i { position: absolute; left: 0; top: 0; width: 100%; height: 0%; background: linear-gradient(var(--brass),var(--gold)); border-radius: 2px; }
+  @media (max-width: 760px){ #rail { display: none; } }
+
+  /* ── captions ── */
+  .caption { position: absolute; z-index: 10; opacity: 0; pointer-events: none; will-change: opacity, transform; max-width: min(46vw, 620px); }
+  .caption .ey { font-family: var(--sans); font-size: 12px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--brass-bright); margin-bottom: 16px; display: inline-flex; align-items: center; gap: 10px; }
+  .caption .ey::before { content: ""; width: 26px; height: 1px; background: var(--brass); display: inline-block; }
+  .caption h1 { font-size: clamp(48px, 8vw, 118px); font-weight: 500; letter-spacing: -0.02em; line-height: 0.98; text-shadow: 0 4px 40px rgba(0,0,0,0.7); }
+  .caption h2 { font-size: clamp(32px, 5vw, 74px); font-weight: 500; letter-spacing: -0.015em; line-height: 1.02; text-shadow: 0 3px 30px rgba(0,0,0,0.65); }
+  .caption p { margin-top: 18px; font-family: var(--sans); font-size: clamp(15px, 1.4vw, 20px); color: var(--text); font-weight: 400; max-width: 34ch; text-shadow: 0 1px 14px rgba(0,0,0,0.85); }
+  .caption .it { font-style: italic; color: var(--gold); }
+  .cap-center { left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+  .cap-center .ey, .cap-center p { margin-left: auto; margin-right: auto; }
+  .cap-left { left: 7vw; top: 50%; transform: translateY(-50%); }
+  .cap-right { right: 7vw; top: 50%; transform: translateY(-50%); text-align: right; }
+  .cap-right .ey { flex-direction: row-reverse; }
+  .cap-right .ey::before { }
+  .cap-right p { margin-left: auto; }
+  .cap-bottom { left: 50%; bottom: 13vh; transform: translateX(-50%); text-align: center; max-width: 90vw; }
+  .cap-bottom .ey, .cap-bottom p { margin-left: auto; margin-right: auto; }
+
+  #scroll-cue { position: absolute; bottom: 4vh; left: 50%; transform: translateX(-50%); z-index: 10;
+    display: flex; flex-direction: column; align-items: center; gap: 10px; color: var(--text-dim);
+    font-size: 11px; letter-spacing: 0.3em; text-indent: 0.3em; text-transform: uppercase; transition: opacity .5s; }
+  #scroll-cue::after { content: ""; width: 1px; height: 32px; background: linear-gradient(to bottom, var(--gold), transparent); animation: cue 1.8s ease-in-out infinite; }
+  @keyframes cue { 0%,100%{transform:translateY(0);opacity:1} 50%{transform:translateY(8px);opacity:.4} }
+
+  .dot { display:inline-block; width:0.5em; height:0.5em; border-radius:50%; background:var(--brass); margin-right:0.4em; vertical-align:middle; }
+
+  /* ── buttons / micro-interactions ── */
+  .btn { position: relative; display:inline-flex; align-items:center; gap:10px; padding:16px 36px; border-radius:100px; font-family: var(--sans); font-size:15px; font-weight:600; text-decoration:none; transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .3s; overflow:hidden; }
+  .btn-primary { background: linear-gradient(180deg, var(--brass-bright), var(--brass)); color:#fff; box-shadow: 0 14px 40px -14px rgba(192,96,62,0.9); }
+  .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 22px 50px -16px rgba(236,154,107,0.9); }
+  .btn-ghost { border:1px solid rgba(247,240,232,0.3); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--gold); color: var(--gold); transform: translateY(-3px); }
+  .btn .arrow { transition: transform .25s; }
+  .btn:hover .arrow { transform: translateX(4px); }
+
+  /* ── section chrome ── */
+  .bp { position: relative; padding: 16vh 7vw; max-width: 1440px; margin: 0 auto; }
+  .kicker { display:inline-flex; align-items:center; gap:10px; font-family: var(--sans); font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: var(--brass-bright); margin-bottom: 22px; }
+  .kicker::before { content:""; width: 26px; height:1px; background: var(--brass); }
+  h2.big { font-family: var(--serif); font-weight: 500; letter-spacing: -0.02em; line-height: 1.03; font-size: clamp(36px, 5.2vw, 78px); }
+  h2.big .it { font-style: italic; color: var(--gold); }
+  p.lead { font-family: var(--sans); color: var(--text-dim); font-size: clamp(15px, 1.25vw, 19px); line-height: 1.8; max-width: 46ch; margin-top: 22px; }
+  p.lead b { color: var(--text); font-weight: 600; }
+  [data-reveal] { opacity: 0; transform: translateY(34px); }
+  .no-gsap [data-reveal] { transition: opacity .8s cubic-bezier(.2,.6,.2,1), transform .8s cubic-bezier(.2,.6,.2,1); }
+  .no-gsap [data-reveal].in { opacity: 1; transform: none; }
+
+  .split { display: grid; grid-template-columns: 1.05fr 1fr; gap: 6vw; align-items: center; }
+  .split.flip > .col-txt { order: 2; }
+  @media (max-width: 860px){ .split { grid-template-columns: 1fr; gap: 6vh; } .split.flip > .col-txt { order: 0; } }
+
+  /* 3D tilt media frame */
+  .media3d { position: relative; border-radius: 18px; transform-style: preserve-3d; will-change: transform; }
+  .media3d .frame { position: relative; border-radius: 18px; overflow: hidden; box-shadow: 0 40px 80px -30px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(247,240,232,0.08); transform: translateZ(0); }
+  .media3d img { width: 100%; display: block; transform: scale(1.06); transition: transform .6s cubic-bezier(.2,.8,.2,1); }
+  .media3d:hover img { transform: scale(1.12); }
+  .media3d .glow { position:absolute; inset:-2px; border-radius:20px; background: radial-gradient(60% 60% at 30% 20%, rgba(236,154,107,0.35), transparent 70%); opacity:0; transition: opacity .5s; pointer-events:none; transform: translateZ(40px); }
+  .media3d:hover .glow { opacity: 1; }
+  .media3d .chip { position:absolute; z-index:3; bottom: 16px; left: 16px; transform: translateZ(60px); background: rgba(20,13,9,0.7); backdrop-filter: blur(8px); border:1px solid var(--line); border-radius:100px; padding:9px 16px; font-size:12px; letter-spacing:0.04em; color: var(--text); display:flex; align-items:center; gap:8px; }
+  .media3d .chip .d { width:7px;height:7px;border-radius:50%;background:var(--green); box-shadow:0 0 10px var(--green); }
+
+  .manifesto { text-align: center; padding: 22vh 7vw; }
+  .manifesto .eyebig { font-family: var(--sans); font-size: clamp(15px,1.5vw,20px); letter-spacing: 0.34em; text-transform: uppercase; color: var(--brass-bright); display:inline-block; padding: 10px 22px; border:1px solid rgba(192,96,62,0.4); border-radius: 100px; margin-bottom: 40px; }
+  .manifesto h2 { font-size: clamp(40px, 7vw, 118px); max-width: 16ch; margin: 0 auto; line-height: 1.02; }
+
+  /* ── how it works ── */
+  .steps { display:grid; grid-template-columns: repeat(3,1fr); gap: 26px; margin-top: 7vh; }
+  .step { position:relative; border:1px solid var(--line); border-radius: 22px; padding: 40px 32px 36px; background: linear-gradient(180deg, rgba(27,18,12,0.9), rgba(14,9,6,0.6)); transform-style: preserve-3d; will-change: transform; overflow: hidden; }
+  .step::after { content:""; position:absolute; inset:0; border-radius:22px; background: radial-gradient(70% 60% at 50% 0%, rgba(236,154,107,0.12), transparent 70%); opacity:0; transition:opacity .5s; }
+  .step:hover::after { opacity: 1; }
+  .step .ic { width: 58px; height: 58px; border-radius: 16px; display:grid; place-items:center; background: rgba(192,96,62,0.14); border:1px solid rgba(192,96,62,0.34); margin-bottom: 26px; transform: translateZ(40px); }
+  .step .ic svg { width: 28px; height: 28px; stroke: var(--brass-bright); fill:none; stroke-width:1.6; }
+  .step .n { position:absolute; top: 28px; right: 30px; font-family: var(--serif); font-style: italic; font-size: 46px; color: rgba(236,154,107,0.28); transform: translateZ(20px); }
+  .step h3 { font-size: clamp(20px,1.9vw,26px); font-weight: 500; letter-spacing:-0.01em; transform: translateZ(30px); }
+  .step p { margin-top: 14px; color: var(--text-dim); font-size: 15px; line-height: 1.7; transform: translateZ(20px); }
+  @media (max-width: 860px){ .steps { grid-template-columns: 1fr; } }
+
+  /* ── 3D food ring ── */
+  #menu { text-align: center; overflow: hidden; }
+  .ring-head { max-width: 720px; margin: 0 auto; }
+  .windows { display:flex; flex-wrap:wrap; justify-content:center; gap: 12px; margin-top: 34px; }
+  .win { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); border:1px solid var(--line); border-radius: 100px; padding: 9px 18px; transition: all .3s; }
+  .win.on, .win:hover { color:#fff; border-color: var(--brass); background: rgba(192,96,62,0.16); }
+  .ring-scene { height: 480px; margin-top: 20px; perspective: 1500px; perspective-origin: 50% 42%; }
+  .ring { position: relative; width: 240px; height: 240px; margin: 90px auto 0; transform-style: preserve-3d; transform: rotateX(-8deg); }
+  .ring-inner { position:absolute; inset:0; transform-style: preserve-3d; will-change: transform; }
+  .dishcard { position: absolute; top:0; left:0; width: 240px; height: 240px; }
+  .dishcard .disc { width: 210px; height: 210px; margin: 0 auto; border-radius: 50%; overflow: hidden; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.85), inset 0 0 0 1px rgba(247,240,232,0.1); position: relative; }
+  .dishcard .disc img { width: 100%; height: 100%; object-fit: cover; }
+  .dishcard .disc::after { content:""; position:absolute; inset:0; border-radius:50%; box-shadow: inset 0 -30px 50px -20px rgba(14,9,6,0.9); }
+  .dishcard .lbl { margin-top: 16px; text-align:center; }
+  .dishcard .lbl .nm { font-family: var(--serif); font-size: 19px; }
+  .dishcard .lbl .mt { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brass-bright); margin-top: 5px; }
+  .ring-fade { position:absolute; inset:0; pointer-events:none; z-index:5;
+    background: linear-gradient(to right, var(--bg), transparent 14%, transparent 86%, var(--bg)); }
+  @media (max-width: 760px){ .ring-scene { height: 420px; perspective: 1100px; } }
+
+  /* ── stats ── */
+  .stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 6vw; text-align: center; }
+  .stat .num { font-family: var(--serif); font-weight: 500; letter-spacing: -0.02em; font-size: clamp(52px, 6.5vw, 96px); line-height:1; color: var(--gold); }
+  .stat .num small { font-size: 0.42em; color: var(--brass-bright); }
+  .stat .lbl { margin-top: 14px; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--text-dim); }
+
+  /* ── quotes ── */
+  .quotes { display:grid; grid-template-columns: repeat(3,1fr); gap: 22px; margin-top: 6vh; }
+  .qc { border:1px solid var(--line); border-radius: 20px; padding: 34px 30px; background: linear-gradient(180deg, rgba(27,18,12,0.7), rgba(14,9,6,0.4)); transform-style: preserve-3d; will-change: transform; }
+  .qc .mk { font-family: var(--serif); font-size: 54px; line-height: 0.6; color: var(--brass); height: 22px; }
+  .qc blockquote { font-family: var(--serif); font-size: clamp(17px,1.5vw,21px); font-weight: 400; line-height: 1.45; margin-top: 6px; }
+  .qc cite { display:block; margin-top: 22px; font-style: normal; font-family: var(--sans); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); }
+  @media (max-width: 860px){ .quotes { grid-template-columns: 1fr; } }
+
+  /* ── faq ── */
+  .faq { max-width: 860px; margin: 6vh auto 0; }
+  .faq details { border:1px solid var(--line); border-radius: 16px; margin-bottom: 14px; padding: 4px 24px; background: linear-gradient(180deg, rgba(27,18,12,0.6), rgba(14,9,6,0.3)); transition: border-color .3s, background .3s; }
+  .faq details[open] { border-color: rgba(192,96,62,0.45); }
+  .faq summary { cursor:pointer; list-style:none; font-family: var(--serif); font-size: clamp(18px,1.7vw,23px); font-weight: 500; display:flex; justify-content:space-between; align-items:center; padding: 22px 0; }
+  .faq summary::-webkit-details-marker { display:none; }
+  .faq summary .pl { position: relative; width: 22px; height: 22px; flex:none; }
+  .faq summary .pl::before, .faq summary .pl::after { content:""; position:absolute; background: var(--brass-bright); border-radius:2px; transition: transform .3s; }
+  .faq summary .pl::before { top: 10px; left: 0; width: 22px; height: 2px; }
+  .faq summary .pl::after { left: 10px; top: 0; width: 2px; height: 22px; }
+  .faq details[open] summary .pl::after { transform: scaleY(0); }
+  .faq p { color: var(--text-dim); line-height: 1.75; font-size: 15px; padding: 0 0 24px; max-width: 62ch; }
+
+  /* ── sticky nav ── */
+  #brandnav { position: fixed; top: 0; left: 0; right: 0; z-index: 80; display: flex; align-items: center; justify-content: space-between; padding: 16px 5vw;
+    background: color-mix(in srgb, var(--bg) 72%, transparent); backdrop-filter: blur(16px); border-bottom: 1px solid transparent;
+    opacity: 0; pointer-events: none; transform: translateY(-10px); transition: opacity .45s ease, transform .45s ease; }
+  #brandnav.on { opacity: 1; pointer-events: auto; transform: none; border-bottom-color: var(--line); }
+  #brandnav .mark { font-family: var(--serif); font-size: 22px; color: var(--text); }
+  #brandnav .mark b { color: var(--brass-bright); }
+  #brandnav .links { display: flex; gap: 2vw; }
+  #brandnav a.nl { position: relative; color: var(--text-dim); text-decoration: none; font-size: 13px; letter-spacing: 0.06em; transition: color .25s; }
+  #brandnav a.nl::after { content:""; position:absolute; left:0; bottom:-5px; width:0; height:1px; background: var(--brass-bright); transition: width .3s; }
+  #brandnav a.nl:hover { color: var(--text); } #brandnav a.nl:hover::after { width:100%; }
+  #brandnav .navcta { border: 1px solid var(--brass); border-radius: 100px; padding: 10px 22px; color: var(--brass-bright); font-size: 13px; text-decoration:none; transition: all .3s; }
+  #brandnav .navcta:hover { background: var(--brass); color:#fff; }
+  @media (max-width: 860px){ #brandnav .links { display:none; } }
+
+  /* ── live menu phone ── */
+  #live .split { align-items: center; }
+  .phone-stage { display:flex; justify-content:center; perspective: 1600px; }
+  .phone { position: relative; width: 340px; max-width: 84vw; border-radius: 54px; padding: 12px;
+    background: linear-gradient(155deg, #3a2418, #17100a 55%, #0c0806);
+    box-shadow: 0 60px 120px -40px rgba(0,0,0,0.9), 0 0 0 2px rgba(247,240,232,0.06), inset 0 0 0 1px rgba(0,0,0,0.6);
+    transform-style: preserve-3d; will-change: transform; }
+  .phone::before { content:""; position:absolute; inset:0; border-radius:54px; background: linear-gradient(135deg, rgba(255,255,255,0.14), transparent 30%); pointer-events:none; }
+  .phone .screen { position: relative; background: linear-gradient(180deg, #120c08, #0b0705); border-radius: 44px; overflow: hidden; }
+  .island { position:absolute; top: 12px; left:50%; transform: translateX(-50%); width: 108px; height: 30px; background:#000; border-radius: 100px; z-index: 6; }
+  .statusbar { display:flex; justify-content:space-between; align-items:center; padding: 14px 24px 8px; font-size: 12px; font-weight:600; color: var(--text); }
+  .statusbar .icons { display:flex; gap:6px; align-items:center; }
+  .statusbar .icons span { width: 16px; height: 11px; background: currentColor; border-radius: 2px; opacity: .9; display:inline-block; }
+  .statusbar .icons .bat { width: 22px; border-radius: 3px; position: relative; }
+  .app-top { padding: 8px 20px 14px; }
+  .app-row { display:flex; align-items:center; justify-content:space-between; }
+  .app-brand { display:flex; align-items:center; gap:9px; font-family: var(--serif); font-size: 19px; color: var(--text); }
+  .app-brand .logo { width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(150deg,var(--brass-bright),var(--brass)); display:grid; place-items:center; font-size:14px; }
+  .live-badge { display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#fff; background: var(--brass); padding:5px 10px; border-radius:100px; }
+  .live-badge i { width:6px;height:6px;border-radius:50%;background:#fff; animation: blink 1.3s infinite; }
+  @keyframes blink { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.35;transform:scale(.7)} }
+  .app-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .cutoff { margin: 4px 20px 0; display:flex; align-items:center; justify-content:space-between; font-size:12px;
+    background: linear-gradient(90deg, rgba(192,96,62,0.16), rgba(192,96,62,0.05)); border:1px solid rgba(192,96,62,0.32); border-radius:12px; padding:11px 14px; }
+  .cutoff .lab { color: var(--text-dim); display:flex; align-items:center; gap:7px; }
+  .cutoff b { font-variant-numeric: tabular-nums; color: var(--gold); font-weight:700; letter-spacing:0.02em; }
+  .menu-list { padding: 12px 14px 6px; }
+  .item { display:flex; align-items:center; gap:13px; padding: 12px 6px; border-bottom: 1px solid rgba(247,240,232,0.06); }
+  .item:last-child { border-bottom:none; }
+  .item .thumb { width: 52px; height: 52px; border-radius: 14px; background-size:cover; background-position:center; flex:none; box-shadow: inset 0 0 0 1px rgba(247,240,232,0.08); }
+  .item .mid { flex:1; min-width:0; }
+  .item .nm { font-size: 15px; font-weight: 600; display:flex; align-items:center; gap:7px; }
+  .veg { width:13px;height:13px;border:1.5px solid var(--green); border-radius:3px; display:inline-grid; place-items:center; flex:none; }
+  .veg::after { content:""; width:6px;height:6px;border-radius:50%; background:var(--green); }
+  .item .pr { font-size: 12.5px; color: var(--text-dim); margin-top: 3px; }
+  .stock { font-size:10px; font-weight:700; letter-spacing:0.04em; padding:5px 9px; border-radius:100px; white-space:nowrap; flex:none; }
+  .stock.low { color:#fff; background: var(--brass); }
+  .stock.ok { color: var(--green); background: rgba(143,179,111,0.16); }
+  .add { font-size:13px; font-weight:700; color:#fff; background: var(--brass); border:none; border-radius:100px; padding:8px 16px; cursor:pointer; flex:none; box-shadow: 0 8px 18px -8px rgba(192,96,62,0.9); }
+  .item.sold { opacity:.4; } .item.sold .stock { color: var(--text-dim); background: rgba(247,240,232,0.08); }
+  .paybar { margin: 8px 14px 16px; display:flex; align-items:center; justify-content:space-between; background: linear-gradient(180deg,var(--brass-bright),var(--brass)); color:#fff; border-radius:16px; padding: 14px 18px; box-shadow: 0 14px 30px -12px rgba(192,96,62,0.9); }
+  .paybar .t { font-size: 12px; opacity: .9; } .paybar .v { font-size: 17px; font-weight: 700; font-family: var(--serif); }
+  .paybar .go { font-size: 14px; font-weight: 700; display:flex; align-items:center; gap:7px; }
+
+  /* ── cta band ── */
+  .ctaband { text-align: center; padding: 20vh 7vw; position: relative; }
+  .ctaband::before { content:""; position:absolute; inset:0; background: radial-gradient(60% 60% at 50% 40%, rgba(192,96,62,0.16), transparent 70%); pointer-events:none; }
+  .ctaband .btnrow { display:flex; gap:16px; justify-content:center; flex-wrap:wrap; margin-top: 34px; }
+
+  /* ── footer ── */
+  footer.ft { border-top: 1px solid var(--line); padding: 9vh 7vw 6vh; }
+  .ft .cols { display: grid; grid-template-columns: 2fr repeat(3, 1fr); gap: 5vw; max-width: 1440px; margin: 0 auto; }
+  .ft .bm { font-family: var(--serif); font-size: 24px; color: var(--text); } .ft .bm b { color: var(--brass-bright); }
+  .ft h4 { font-size: 11px; letter-spacing: 0.26em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 16px; }
+  .ft a { display: block; color: var(--text-dim); text-decoration: none; font-size: 14px; margin-bottom: 11px; transition: color .25s; }
+  .ft a:hover { color: var(--text); }
+  .ft .fine { margin-top: 8vh; text-align: center; font-size: 11px; letter-spacing: 0.14em; color: color-mix(in srgb, var(--text) 32%, transparent); text-transform: uppercase; }
+  @media (max-width: 860px){ .ft .cols { grid-template-columns: 1fr 1fr; } }
+
+  /* ═══ logo marks ═══ */
+  #loader .logo-splash { width: 96px; height: 96px; object-fit: contain; filter: drop-shadow(0 16px 34px rgba(192,96,62,.55)); animation: floaty 4s ease-in-out infinite; }
+  @keyframes floaty { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-9px)} }
+  #brandnav .mark .lg { width: 30px; height: 30px; object-fit: contain; margin-right: 10px; vertical-align: -0.42em; filter: drop-shadow(0 4px 10px rgba(192,96,62,.5)); }
+  .ft .bm .lg { width: 30px; height: 30px; object-fit: contain; margin-right: 9px; vertical-align: -0.42em; }
+  .app-brand .lg { width: 26px; height: 26px; object-fit: contain; }
+
+  /* ═══ hero corner lockup ═══ */
+  .cap-hero { left: 6vw; top: 13vh; text-align: left; max-width: min(54vw, 660px); }
+  .cap-hero .lock { display: flex; align-items: center; gap: 18px; margin-bottom: 24px; }
+  .cap-hero .lock img { width: 74px; height: 74px; object-fit: contain; filter: drop-shadow(0 12px 28px rgba(192,96,62,.55)); animation: floaty 4.5s ease-in-out infinite; }
+  .cap-hero .lock .ey { margin: 0; }
+  .cap-hero h1 { font-size: clamp(56px, 9vw, 128px); margin-top: 2px; }
+  .cap-hero p { margin-top: 18px; max-width: 30ch; }
+  @media (max-width: 760px){ .cap-hero { left: 7vw; top: 12vh; max-width: 88vw; } .cap-hero .lock img { width: 56px; height: 56px; } }
+
+  /* ═══ food ring — crisp billboard carousel ═══ */
+  .ring-head { margin-bottom: 8px; }
+  .ring-scene { perspective: 1900px; height: 660px; margin-top: 64px; position: relative; }
+  .ring { transform: none; margin: 168px auto 0; }
+  .dishcard { width: 260px; height: 260px; left: -10px; top: -10px; will-change: transform, opacity; }
+  .dishcard .disc { width: 240px; height: 240px; box-shadow: 0 34px 70px -22px rgba(0,0,0,.9), 0 0 0 1px rgba(232,185,129,.4), inset 0 0 0 3px rgba(255,255,255,.07); }
+  .dishcard .disc::after { box-shadow: inset 0 -20px 42px -28px rgba(14,9,6,.7); }
+  .dishcard .disc img { transition: none; }
+  .dishcard .lbl { display: none; }
+  /* centre light pool behind the front plate */
+  .ring-spot { position: absolute; left: 50%; top: 300px; width: 620px; height: 620px; transform: translate(-50%,-50%); z-index: 0; pointer-events: none;
+    background: radial-gradient(circle, rgba(236,154,107,0.22), rgba(192,96,62,0.10) 38%, transparent 66%); filter: blur(6px); animation: spotpulse 5s ease-in-out infinite; }
+  @keyframes spotpulse { 0%,100%{opacity:.7; transform:translate(-50%,-50%) scale(1);} 50%{opacity:1; transform:translate(-50%,-50%) scale(1.06);} }
+  .ring-caption { position: absolute; left: 0; right: 0; bottom: 40px; text-align: center; z-index: 6; pointer-events: none; }
+  .ring-caption .nm { font-family: var(--serif); font-size: clamp(26px, 2.8vw, 38px); display: block; transition: opacity .35s ease; }
+  .ring-caption .mt { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brass-bright); margin-top: 10px; display: block; transition: opacity .35s ease; }
+  @media (max-width: 760px){ .ring-scene { height: 560px; perspective: 1200px; margin-top: 40px; } .ring { margin-top: 150px; } .ring-spot { width: 400px; height: 400px; top: 260px; } }
+
+  /* ═══ how it works — richer ═══ */
+  .steps { position: relative; }
+  .steps::before { content: ""; position: absolute; top: 96px; left: 16%; right: 16%; height: 1px; background: linear-gradient(90deg, transparent, rgba(192,96,62,.45), transparent); z-index: 0; }
+  @media (max-width: 860px){ .steps::before { display: none; } }
+  .step { transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s; }
+  .step:hover { box-shadow: 0 44px 90px -46px rgba(0,0,0,.85); }
+  .step .ic { transition: transform .45s cubic-bezier(.2,.8,.2,1), background .45s; box-shadow: 0 12px 28px -14px rgba(192,96,62,.7); }
+  .step:hover .ic { transform: translateZ(60px) translateY(-4px) scale(1.08); background: rgba(192,96,62,.26); }
+  .step .sheen { position: absolute; inset: 0; border-radius: 22px; background: linear-gradient(120deg, transparent 34%, rgba(255,255,255,.07) 46%, transparent 58%); transform: translateX(-70%); transition: transform .9s ease; pointer-events: none; }
+  .step:hover .sheen { transform: translateX(70%); }
+
+  /* ═══ stats — 3D bento tiles ═══ */
+  .statgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; perspective: 1200px; }
+  .st { position: relative; border: 1px solid var(--line); border-radius: 24px; padding: 42px 26px 36px; text-align: center; overflow: hidden;
+    background: linear-gradient(180deg, rgba(27,18,12,.9), rgba(14,9,6,.5)); transform-style: preserve-3d; will-change: transform;
+    transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s, border-color .5s; }
+  .st::after { content: ""; position: absolute; inset: 0; border-radius: 24px; background: radial-gradient(75% 60% at 50% 0%, rgba(236,154,107,.16), transparent 70%); opacity: 0; transition: opacity .5s; }
+  .st:hover { box-shadow: 0 40px 80px -42px rgba(192,96,62,.5); border-color: rgba(192,96,62,.4); }
+  .st:hover::after { opacity: 1; }
+  .st .ic { width: 46px; height: 46px; margin: 0 auto 20px; border-radius: 13px; display: grid; place-items: center; background: rgba(192,96,62,.14); border: 1px solid rgba(192,96,62,.32); transform: translateZ(30px); }
+  .st .ic svg { width: 22px; height: 22px; stroke: var(--brass-bright); fill: none; stroke-width: 1.7; }
+  .st .num { font-family: var(--serif); font-weight: 500; letter-spacing: -0.02em; font-size: clamp(46px, 5vw, 74px); line-height: 1; color: var(--gold); transform: translateZ(20px); }
+  .st .num .pre { font-size: 0.46em; color: var(--brass-bright); vertical-align: 0.42em; margin-right: 2px; }
+  .st .num .u { font-size: 0.36em; color: var(--brass-bright); margin-left: 4px; letter-spacing: 0.02em; }
+  .st .lbl { margin-top: 14px; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-dim); transform: translateZ(10px); }
+  @media (max-width: 980px){ .statgrid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px){ .statgrid { grid-template-columns: 1fr; } }
+
+  /* ═══ testimonials — glowing 3D cards ═══ */
+  .quotes { perspective: 1300px; }
+  .qc { position: relative; transition: transform .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s, border-color .5s; }
+  .qc::before { content: ""; position: absolute; inset: -1px; border-radius: 20px; padding: 1px;
+    background: linear-gradient(140deg, rgba(236,154,107,.7), rgba(192,96,62,.15) 45%, transparent 70%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude;
+    opacity: 0; transition: opacity .5s; pointer-events: none; }
+  .qc:hover::before { opacity: 1; }
+  .qc:hover { box-shadow: 0 44px 90px -44px rgba(192,96,62,.55); }
+  @media (min-width: 861px){ .quotes .qc:nth-child(2){ transform: translateY(-26px); } .quotes .qc:nth-child(2):hover{ transform: translateY(-30px); } }
+  .qc .who { display: flex; align-items: center; gap: 13px; margin-top: 24px; }
+  .qc .av { width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center; font-family: var(--serif); color: #fff; font-size: 18px; background: linear-gradient(150deg, var(--brass-bright), var(--brass)); box-shadow: 0 8px 18px -8px rgba(192,96,62,.8); }
+  .qc .who cite { margin-top: 0; }
+
+  /* ═══ FAQ — 2-col card grid ═══ */
+  .faqgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; max-width: 1120px; margin: 6vh auto 0; }
+  .fcard { align-self: start; border: 1px solid var(--line); border-radius: 20px; padding: 4px 26px; overflow: hidden;
+    background: linear-gradient(180deg, rgba(27,18,12,.65), rgba(14,9,6,.32));
+    transition: border-color .4s, box-shadow .4s, transform .4s cubic-bezier(.2,.8,.2,1); }
+  .fcard:hover { transform: translateY(-3px); box-shadow: 0 30px 60px -34px rgba(0,0,0,.7); }
+  .fcard[open] { border-color: rgba(192,96,62,.5); box-shadow: 0 34px 66px -32px rgba(192,96,62,.4); }
+  .fcard summary { display: flex; gap: 16px; align-items: center; padding: 24px 0; cursor: pointer; list-style: none; }
+  .fcard summary::-webkit-details-marker { display: none; }
+  .fcard .qn { font-family: var(--serif); font-style: italic; color: var(--brass-bright); font-size: 24px; flex: none; width: 30px; }
+  .fcard .qt { font-family: var(--serif); font-size: clamp(17px,1.5vw,21px); font-weight: 500; flex: 1; }
+  .fcard .pl { position: relative; width: 20px; height: 20px; flex: none; }
+  .fcard .pl::before, .fcard .pl::after { content: ""; position: absolute; background: var(--brass-bright); border-radius: 2px; transition: transform .3s; }
+  .fcard .pl::before { top: 9px; left: 0; width: 20px; height: 2px; }
+  .fcard .pl::after { left: 9px; top: 0; width: 2px; height: 20px; }
+  .fcard[open] .pl::after { transform: scaleY(0); }
+  .fcard p { color: var(--text-dim); line-height: 1.75; font-size: 15px; padding: 0 0 24px 46px; max-width: 52ch; }
+  @media (max-width: 820px){ .faqgrid { grid-template-columns: 1fr; } .fcard p { padding-left: 46px; } }
+
+  /* ═══ CTA logo object ═══ */
+  .ctaband .cta-logo { width: 200px; height: 200px; object-fit: contain; margin: 0 auto 18px; display: block; filter: drop-shadow(0 24px 54px rgba(192,96,62,.5)); animation: floaty 5s ease-in-out infinite;
+    -webkit-mask-image: radial-gradient(circle at 50% 46%, #000 52%, transparent 74%); mask-image: radial-gradient(circle at 50% 46%, #000 52%, transparent 74%); }
+
+  @media (prefers-reduced-motion: reduce){ * { animation: none !important; } }
+</style>
+</head>
+<body class="no-gsap">
+
+<div id="loader">
+  <img class="logo-splash" src="img/logo-icon.webp" alt="Padosi">
+  <div class="mark">Pad<b>o</b>si</div>
+  <div class="bar"><i id="loadbar"></i></div>
+</div>
+
+<div id="rail"><i></i></div>
+
+<!-- ═══════════ SCROLL FILM ═══════════ -->
+<div id="track">
+  <div id="stage">
+    <canvas id="film"></canvas>
+    <div id="vignette"></div>
+    <div id="grain"></div>
+
+    <div class="caption cap-hero" data-in="-0.05" data-hold="0.05" data-out="0.13">
+      <div class="lock">
+        <img src="img/logo-icon.webp" alt="Padosi logo">
+        <span class="ey">For Neighbours</span>
+      </div>
+      <h1>Pad<span class="it">o</span>si</h1>
+      <p>Home-cooked meals, from your neighbours.</p>
+    </div>
+
+    <div class="caption cap-left" data-in="0.185" data-hold="0.25" data-out="0.305">
+      <span class="ey">The kitchen next door</span>
+      <h2>A great cook<br>already lives in<br>your <span class="it">society.</span></h2>
+      <p>Not a restaurant. Not a cloud kitchen. A neighbour.</p>
+    </div>
+
+    <div class="caption cap-right" data-in="0.35" data-hold="0.41" data-out="0.47">
+      <span class="ey">Fresh this morning</span>
+      <h2>Today, she cooks<br>one <span class="it">fresh batch.</span></h2>
+      <p>Made by hand, in a real home kitchen.</p>
+    </div>
+
+    <div class="caption cap-left" data-in="0.515" data-hold="0.575" data-out="0.635">
+      <span class="ey">Care in every step</span>
+      <h2>Made to order.<br><span class="it">Sealed fresh.</span></h2>
+      <p>Portioned, covered and labelled — never mass-produced.</p>
+    </div>
+
+    <div class="caption cap-right" data-in="0.68" data-hold="0.74" data-out="0.80">
+      <span class="ey">A few floors away</span>
+      <h2>Straight to<br>your door,<br><span class="it">next door.</span></h2>
+      <p>Collected warm, from someone you know.</p>
+    </div>
+
+    <div class="caption cap-bottom" data-in="0.85" data-hold="0.93" data-out="1.1">
+      <span class="ey">Keep scrolling for today's</span>
+      <h1>Your building<br>has a <span class="it">menu.</span></h1>
+    </div>
+
+    <div id="scroll-cue">Scroll</div>
+  </div>
+</div>
+
+<!-- ═══════════ STICKY NAV ═══════════ -->
+<nav id="brandnav">
+  <span class="mark"><img class="lg" src="img/logo-icon.webp" alt="">Pad<b>o</b>si</span>
+  <div class="links">
+    <a class="nl" href="#live">Live menu</a>
+    <a class="nl" href="#menu">Today's food</a>
+    <a class="nl" href="#how">How it works</a>
+    <a class="nl" href="#cooks">For cooks</a>
+    <a class="nl" href="#trust">Hygiene</a>
+  </div>
+  <a class="navcta" href="https://padosi-self.vercel.app" target="_blank" rel="noopener" data-magnetic>Order</a>
+</nav>
+
+<!-- ═══════════ HINGE: LIVE MENU ═══════════ -->
+<section class="bp" id="live">
+  <div class="split">
+    <div class="col-txt" data-reveal>
+      <span class="kicker">One live batch · one link</span>
+      <h2 class="big">Only what's still<br><span class="it">available.</span> Nothing else.</h2>
+      <p class="lead">No scrolling a WhatsApp group. No “is it still there?”. No paying five people five ways. The cook posts <b>one live batch</b>; you open <b>one society link</b> and see exactly what can still be ordered — with live stock and a clear cut-off.</p>
+      <p class="lead">When it's gone, it's gone. When the cut-off passes, the listing closes itself.</p>
+    </div>
+    <div class="phone-stage" data-reveal>
+      <div class="phone" id="phone" data-tilt>
+        <div class="screen">
+          <div class="island"></div>
+          <div class="statusbar"><span>9:41</span><div class="icons"><span></span><span></span><span class="bat"></span></div></div>
+          <div class="app-top">
+            <div class="app-row">
+              <div class="app-brand"><span class="logo"><img class="lg" src="img/logo-icon.webp" alt=""></span> Padosi</div>
+              <span class="live-badge"><i></i>Live</span>
+            </div>
+            <div class="app-sub">Prestige Society · Lunch · pickup</div>
+          </div>
+          <div class="cutoff"><span class="lab">⏱ Orders close in</span><b id="countdown">00:47:12</b></div>
+          <div class="menu-list">
+            <div class="item">
+              <div class="thumb" style="background-image:url('img/food-thali.webp')"></div>
+              <div class="mid"><div class="nm"><span class="veg"></span>Veg Thali</div><div class="pr">₹120 · rice, dal, sabzi, roti</div></div>
+              <span class="stock low">3 left</span>
+            </div>
+            <div class="item">
+              <div class="thumb" style="background-image:url('img/food-dosa.webp')"></div>
+              <div class="mid"><div class="nm"><span class="veg"></span>Masala Dosa</div><div class="pr">₹80 · with chutney &amp; sambar</div></div>
+              <span class="stock ok">8 left</span>
+            </div>
+            <div class="item">
+              <div class="thumb" style="background-image:url('img/food-rajma.webp')"></div>
+              <div class="mid"><div class="nm"><span class="veg"></span>Rajma Chawal</div><div class="pr">₹110 · homestyle</div></div>
+              <button class="add">Add</button>
+            </div>
+            <div class="item sold">
+              <div class="thumb" style="background-image:url('img/food-poha.webp')"></div>
+              <div class="mid"><div class="nm"><span class="veg"></span>Morning Poha</div><div class="pr">₹50 · breakfast</div></div>
+              <span class="stock">Sold out</span>
+            </div>
+          </div>
+          <div class="paybar"><div><div class="t">1 item · pay the cook on UPI</div><div class="v">₹120</div></div><div class="go">Reserve →</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ MANIFESTO ═══════════ -->
+<section class="bp manifesto" id="story">
+  <div data-reveal><span class="eyebig">Padosi — For Neighbours</span>
+  <h2>The best kitchen near you <span class="it">isn't</span> a restaurant.</h2></div>
+</section>
+
+<!-- ═══════════ 3D FOOD RING ═══════════ -->
+<section class="bp" id="menu">
+  <div class="ring-head" data-reveal>
+    <span class="kicker" style="justify-content:center">Today, across the society</span>
+    <h2 class="big">Breakfast to dinner.<br><span class="it">South &amp; North.</span></h2>
+    <div class="windows">
+      <span class="win on">Breakfast</span><span class="win">Lunch</span><span class="win">Evening snacks</span><span class="win">Dinner</span>
+    </div>
+  </div>
+  <div class="ring-scene" id="ringScene">
+    <div class="ring-spot"></div>
+    <div class="ring"><div class="ring-inner" id="ring">
+      <div class="dishcard" data-nm="Masala Dosa" data-mt="Breakfast · South"><div class="disc"><img src="img/food-dosa.webp" alt="Masala Dosa"></div></div>
+      <div class="dishcard" data-nm="Poha" data-mt="Breakfast · North"><div class="disc"><img src="img/food-poha.webp" alt="Poha"></div></div>
+      <div class="dishcard" data-nm="Meals Thali" data-mt="Lunch · South"><div class="disc"><img src="img/food-thali.webp" alt="South Thali"></div></div>
+      <div class="dishcard" data-nm="Rajma Chawal" data-mt="Lunch · North"><div class="disc"><img src="img/food-rajma.webp" alt="Rajma Chawal"></div></div>
+      <div class="dishcard" data-nm="Medu Vada" data-mt="Snacks · South"><div class="disc"><img src="img/food-vada.webp" alt="Medu Vada"></div></div>
+      <div class="dishcard" data-nm="Samosa" data-mt="Snacks · North"><div class="disc"><img src="img/food-samosa.webp" alt="Samosa"></div></div>
+      <div class="dishcard" data-nm="Curd Rice" data-mt="Dinner · South"><div class="disc"><img src="img/food-curdrice.webp" alt="Curd Rice"></div></div>
+      <div class="dishcard" data-nm="Paneer &amp; Naan" data-mt="Dinner · North"><div class="disc"><img src="img/food-paneer.webp" alt="Paneer Butter Masala"></div></div>
+    </div></div>
+    <div class="ring-fade"></div>
+    <div class="ring-caption"><span class="nm" id="ringNm">Masala Dosa</span><span class="mt" id="ringMt">Breakfast · South</span></div>
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="bp" id="how">
+  <div data-reveal><span class="kicker">How it works</span><h2 class="big">Three steps. <span class="it">No app</span> to install.</h2></div>
+  <div class="steps">
+    <div class="step" data-reveal data-tilt>
+      <span class="sheen"></span>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div>
+      <span class="n">01</span>
+      <h3>The cook lists one batch</h3>
+      <p>Today's dishes, portions and a cut-off time — set in under a minute, then shared as one link to the society group.</p>
+    </div>
+    <div class="step" data-reveal data-tilt>
+      <span class="sheen"></span>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 10l7-7 7 7"/></svg></div>
+      <span class="n">02</span>
+      <h3>Residents open one link</h3>
+      <p>No login, no install. Everyone sees the same live menu — only the food that can still be ordered right now.</p>
+    </div>
+    <div class="step" data-reveal data-tilt>
+      <span class="sheen"></span>
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg></div>
+      <span class="n">03</span>
+      <h3>It closes on its own</h3>
+      <p>Stock drops with every order. At zero, or when the cut-off passes, the listing quietly closes itself.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOR COOKS ═══════════ -->
+<section class="bp" id="cooks">
+  <div class="split">
+    <div class="col-txt" data-reveal>
+      <span class="kicker">For home cooks</span>
+      <h2 class="big">Cook food,<br><span class="it">not</span> order chaos.</h2>
+      <p class="lead">One batch, one link, one clean order list. No counting DMs, no “still available?” replies, no chasing payments across five chats. <b>You cook; Padosi keeps the count.</b></p>
+    </div>
+    <div class="media3d" data-reveal data-tilt>
+      <div class="glow"></div>
+      <div class="frame"><img data-parallax src="img/sealed.webp" alt="Sealed, labelled home-food container beside a fresh thali"></div>
+      <div class="chip"><span class="d"></span>Sealed &amp; labelled</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOR RESIDENTS ═══════════ -->
+<section class="bp">
+  <div class="split flip">
+    <div class="col-txt" data-reveal>
+      <span class="kicker">For residents</span>
+      <h2 class="big">Dinner is closer<br>than you <span class="it">think.</span></h2>
+      <p class="lead">Fresh, homemade food from a neighbour a few floors away — ordered in one tap, collected warm. <b>No delivery wait, no restaurant markup, no digging through chat history.</b></p>
+    </div>
+    <div class="media3d" data-reveal data-tilt>
+      <div class="glow"></div>
+      <div class="frame"><img data-parallax src="img/doorway.webp" alt="A neighbour receiving a home-food container at the door"></div>
+      <div class="chip"><span class="d"></span>Warm, next door</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ HYGIENE / TRUST ═══════════ -->
+<section class="bp" id="trust">
+  <div class="split">
+    <div class="col-txt" data-reveal>
+      <span class="kicker">Hygiene &amp; trust</span>
+      <h2 class="big">Made in a home<br>you can <span class="it">trust.</span></h2>
+      <p class="lead">Cooked fresh in a real home kitchen, portioned into clean covered containers and sealed before it leaves. <b>It's a neighbour you'll see tomorrow</b> — trust is built in, not outsourced.</p>
+    </div>
+    <div class="media3d" data-reveal data-tilt>
+      <div class="glow"></div>
+      <div class="frame"><img data-parallax src="img/kadhai.webp" alt="Fresh tempering of spices in a clean kitchen"></div>
+      <div class="chip"><span class="d"></span>Fresh, hygienic prep</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ STATS ═══════════ -->
+<section class="bp"><div class="statgrid">
+  <div class="st" data-reveal data-tilt><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 1.8"/></svg></div><div class="num"><span data-count="4">0</span></div><div class="lbl">Meal Windows A Day</div></div>
+  <div class="st" data-reveal data-tilt><div class="ic"><svg viewBox="0 0 24 24"><path d="M9.5 14.5l5-5"/><path d="M11 6.5l1-1a3.8 3.8 0 015.5 5.5l-1 1"/><path d="M13 17.5l-1 1a3.8 3.8 0 01-5.5-5.5l1-1"/></svg></div><div class="num"><span data-count="1">0</span></div><div class="lbl">Link Per Society</div></div>
+  <div class="st" data-reveal data-tilt><div class="ic"><svg viewBox="0 0 24 24"><rect x="6.5" y="3" width="11" height="18" rx="2.5"/><path d="M4.5 4.5l15 15"/></svg></div><div class="num"><span data-count="0">0</span></div><div class="lbl">Apps To Install</div></div>
+  <div class="st" data-reveal data-tilt><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 13.5V9.5M9.5 2.5h5"/></svg></div><div class="num"><span class="pre">‹</span>1<span class="u">min</span></div><div class="lbl">To List A Batch</div></div>
+</div></section>
+
+<!-- ═══════════ VOICES ═══════════ -->
+<section class="bp">
+  <div data-reveal><span class="kicker" style="justify-content:center">Why neighbours love it</span></div>
+  <div class="quotes">
+    <div class="qc" data-reveal data-tilt><div class="mk">“</div><blockquote>I stopped scrolling the group at 1pm hoping food was left. Now I just open the link.</blockquote><div class="who"><span class="av">R</span><cite>Resident · Bengaluru</cite></div></div>
+    <div class="qc" data-reveal data-tilt><div class="mk">“</div><blockquote>My batch sells out before I finish cleaning up — and every order is already counted.</blockquote><div class="who"><span class="av">C</span><cite>Home cook · Whitefield</cite></div></div>
+    <div class="qc" data-reveal data-tilt><div class="mk">“</div><blockquote>It feels like ordering from a friend, because it is one. Same building, same evening.</blockquote><div class="who"><span class="av">N</span><cite>Resident · HSR Layout</cite></div></div>
+  </div>
+</section>
+
+<!-- ═══════════ FAQ ═══════════ -->
+<section class="bp">
+  <div data-reveal style="text-align:center"><span class="kicker" style="justify-content:center">Questions</span><h2 class="big">Good to <span class="it">know.</span></h2></div>
+  <div class="faqgrid">
+    <details class="fcard" data-reveal><summary><span class="qn">01</span><span class="qt">How do I pay?</span><span class="pl"></span></summary><p>You pay the cook directly over UPI. Padosi organises the live menu and the order list — payment and pickup stay between you and your neighbour.</p></details>
+    <details class="fcard" data-reveal><summary><span class="qn">02</span><span class="qt">Pickup or delivery?</span><span class="pl"></span></summary><p>Pickup, a few floors away. Because the cook is inside your own society, there's no delivery wait and no delivery fee.</p></details>
+    <details class="fcard" data-reveal><summary><span class="qn">03</span><span class="qt">Is the food hygienic?</span><span class="pl"></span></summary><p>It's cooked fresh in a neighbour's home kitchen and sealed before it leaves. You're ordering from someone in your own building, not an anonymous kitchen.</p></details>
+    <details class="fcard" data-reveal><summary><span class="qn">04</span><span class="qt">I'm a cook — how do I start?</span><span class="pl"></span></summary><p>List today's dishes, portions and a cut-off in under a minute, then share your link to the society group. That's the whole setup.</p></details>
+  </div>
+</section>
+
+<!-- ═══════════ CTA ═══════════ -->
+<section class="bp ctaband" id="order">
+  <div data-reveal>
+    <img class="cta-logo" src="img/logo-mark.webp" alt="Padosi">
+    <span class="kicker" style="justify-content:center">#AajPadosMein</span>
+    <h2 class="big">Your society has a menu.<br>Open <span class="it">today's.</span></h2>
+    <div class="btnrow">
+      <a class="btn btn-primary" href="https://padosi-self.vercel.app" target="_blank" rel="noopener" data-magnetic>Order home food <span class="arrow">→</span></a>
+      <a class="btn btn-ghost" href="https://padosi-self.vercel.app" target="_blank" rel="noopener" data-magnetic>I'm a home cook</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="ft">
+  <div class="cols">
+    <div><span class="bm"><img class="lg" src="img/logo-icon.webp" alt="">Pad<b>o</b>si</span>
+      <p class="lead" style="margin-top:14px;font-size:13px;max-width:34ch">Home-cooked meals, from your neighbours. A live, today-only menu for your apartment society.</p></div>
+    <div><h4>Product</h4><a href="#live">Live menu</a><a href="#menu">Today's food</a><a href="#trust">Hygiene</a></div>
+    <div><h4>People</h4><a href="#cooks">For cooks</a><a href="#story">For residents</a><a href="https://padosi-self.vercel.app" target="_blank" rel="noopener">Open app</a></div>
+    <div><h4>Society</h4><a href="#order">Bring Padosi to yours</a><a href="#">Contact</a><a href="#">About</a></div>
+  </div>
+  <p class="fine">© 2026 Padosi · A concept hero page · Imagery AI-generated, illustrative</p>
+</footer>
+
+<!-- ═══════════ LIBS ═══════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.14/dist/lenis.min.js"></script>
+<script>
+(function(){
+  const hasGSAP = typeof gsap !== "undefined";
+  const hasLenis = typeof Lenis !== "undefined";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* countdown */
+  (function(){ const el=document.getElementById('countdown'); let t=47*60+12;
+    setInterval(()=>{ if(t<=0)return; t--; const h=String(Math.floor(t/3600)).padStart(2,'0'),
+      m=String(Math.floor((t%3600)/60)).padStart(2,'0'), s=String(t%60).padStart(2,'0');
+      el.textContent=`${h}:${m}:${s}`; },1000); })();
+
+  /* nav + rail */
+  const nav=document.getElementById('brandnav'), rail=document.getElementById('rail'), railI=rail.querySelector('i');
+  const track=document.getElementById('track');
+  function onScroll(){
+    const filmEnd=(track.offsetHeight||innerHeight*3)-innerHeight;
+    const past = scrollY > filmEnd*0.9;
+    nav.classList.toggle('on', past); rail.classList.toggle('on', past);
+    const docMax=document.body.scrollHeight-innerHeight;
+    railI.style.height=Math.min(100,(scrollY/docMax)*100)+'%';
+  }
+  addEventListener('scroll', onScroll, {passive:true}); onScroll();
+
+  /* smooth scroll */
+  let lenis=null;
+  const RECORD = location.search.indexOf('record')>-1;
+  if(hasLenis && !reduce && !RECORD){
+    lenis=new Lenis({ lerp:0.09, wheelMultiplier:1, smoothWheel:true });
+    if(hasGSAP){ lenis.on('scroll', ScrollTrigger.update); gsap.ticker.add(t=>lenis.raf(t*1000)); gsap.ticker.lagSmoothing(0); }
+    else { function raf(t){ lenis.raf(t); requestAnimationFrame(raf);} requestAnimationFrame(raf); }
+    document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+      const id=a.getAttribute('href'); if(id.length>1){ const el=document.querySelector(id); if(el){ e.preventDefault(); lenis.scrollTo(el,{offset:-40}); } }
+    }));
+  }
+
+  /* reveals + effects via GSAP, else CSS fallback */
+  if(hasGSAP && !reduce){
+    document.body.classList.remove('no-gsap');
+    gsap.registerPlugin(ScrollTrigger);
+    gsap.utils.toArray('[data-reveal]').forEach(el=>{
+      gsap.fromTo(el,{y:38,opacity:0},{y:0,opacity:1,duration:1,ease:'power3.out',
+        scrollTrigger:{trigger:el,start:'top 84%'}});
+    });
+    /* parallax images */
+    gsap.utils.toArray('[data-parallax]').forEach(img=>{
+      gsap.fromTo(img,{yPercent:-8},{yPercent:8,ease:'none',
+        scrollTrigger:{trigger:img,start:'top bottom',end:'bottom top',scrub:true}});
+    });
+    /* counters */
+    gsap.utils.toArray('[data-count]').forEach(el=>{
+      const to=+el.dataset.count;
+      ScrollTrigger.create({trigger:el,start:'top 88%',once:true,onEnter:()=>{
+        gsap.fromTo(el,{innerText:0},{innerText:to,duration:1.2,ease:'power2.out',snap:{innerText:1},
+          onUpdate:()=>{el.innerText=Math.round(el.innerText);}});
+      }});
+    });
+  } else {
+    /* fallback reveal */
+    const io=new IntersectionObserver(es=>es.forEach(e=>e.isIntersecting&&e.target.classList.add('in')),{threshold:0.16});
+    document.querySelectorAll('[data-reveal]').forEach(el=>io.observe(el));
+    const now=()=>document.querySelectorAll('[data-reveal]:not(.in)').forEach(el=>{const r=el.getBoundingClientRect(); if(r.top<innerHeight*0.92&&r.bottom>0)el.classList.add('in');});
+    addEventListener('scroll',now,{passive:true}); now();
+    document.querySelectorAll('[data-count]').forEach(el=>el.innerText=el.dataset.count);
+  }
+
+  /* pointer tilt (cards, phone) */
+  if(!reduce && matchMedia('(pointer:fine)').matches){
+    document.querySelectorAll('[data-tilt]').forEach(el=>{
+      const strength = el.classList.contains('phone')?10:7;
+      el.addEventListener('pointermove',e=>{
+        const r=el.getBoundingClientRect(); const px=(e.clientX-r.left)/r.width-0.5, py=(e.clientY-r.top)/r.height-0.5;
+        el.style.transform=`perspective(1000px) rotateY(${px*strength}deg) rotateX(${-py*strength}deg)`;
+      });
+      el.addEventListener('pointerleave',()=>{ el.style.transition='transform .6s cubic-bezier(.2,.8,.2,1)'; el.style.transform='perspective(1000px) rotateY(0) rotateX(0)'; setTimeout(()=>el.style.transition='',600); });
+    });
+    /* magnetic buttons */
+    document.querySelectorAll('[data-magnetic]').forEach(el=>{
+      el.addEventListener('pointermove',e=>{ const r=el.getBoundingClientRect(); el.style.transform=`translate(${(e.clientX-r.left-r.width/2)*0.25}px, ${(e.clientY-r.top-r.height/2)*0.35}px)`; });
+      el.addEventListener('pointerleave',()=>{ el.style.transition='transform .4s ease'; el.style.transform='translate(0,0)'; setTimeout(()=>el.style.transition='',400); });
+    });
+  }
+
+  /* 3D food ring: billboard carousel — dishes orbit in a circle but stay upright & crisp */
+  (function(){
+    const ring=document.getElementById('ring'); if(!ring) return;
+    const cards=[...ring.children]; const n=cards.length; const step=360/n; const R=430;
+    const nmEl=document.getElementById('ringNm'), mtEl=document.getElementById('ringMt');
+    let rot=0, paused=false, last=performance.now(), frontIdx=-1;
+    const scene=document.getElementById('ringScene');
+    scene.addEventListener('pointerenter',()=>paused=true);
+    scene.addEventListener('pointerleave',()=>paused=false);
+    function frame(now){
+      const dt=Math.min((now-last)/1000,0.05); last=now;
+      if(!paused&&!reduce) rot=(rot+dt*7)%360;
+      let bestCos=-2, best=0;
+      cards.forEach((c,i)=>{
+        const a=i*step+rot, cos=Math.cos(a*Math.PI/180), depth=(cos+1)/2;
+        c.style.transform=`rotateY(${a}deg) translateZ(${R}px) rotateY(${-a}deg)`;
+        c.style.opacity=(0.18+depth*0.82).toFixed(3);
+        c.style.filter=`brightness(${(0.55+depth*0.5).toFixed(2)}) saturate(${(0.85+depth*0.25).toFixed(2)})`;
+        c.style.zIndex=Math.round(depth*100);
+        const disc=c.querySelector('.disc');
+        if(disc){
+          disc.style.transform=`scale(${(0.78+depth*0.32).toFixed(3)})`;
+          const g=depth*depth; // glow peaks sharply at centre
+          disc.style.boxShadow=`0 34px 70px -22px rgba(0,0,0,.9), 0 0 0 1px rgba(232,185,129,${(0.3+depth*0.55).toFixed(2)}), inset 0 0 0 3px rgba(255,255,255,.07), 0 0 ${Math.round(g*90)}px rgba(236,154,107,${(g*0.6).toFixed(2)}), 0 0 ${Math.round(g*40)}px rgba(232,185,129,${(g*0.45).toFixed(2)})`;
+        }
+        if(cos>bestCos){bestCos=cos;best=i;}
+      });
+      if(best!==frontIdx && nmEl){ frontIdx=best; const c=cards[best];
+        nmEl.style.opacity=0; mtEl.style.opacity=0;
+        setTimeout(()=>{ nmEl.innerHTML=c.dataset.nm; mtEl.textContent=c.dataset.mt; nmEl.style.opacity=1; mtEl.style.opacity=1; },150);
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  })();
+
+  /* refresh ScrollTrigger after fonts/images settle */
+  addEventListener('load',()=>{ if(hasGSAP) ScrollTrigger.refresh(); });
+})();
+</script>
+<script src="main.js"></script>
+</body>
+</html>
