@@ -91,10 +91,28 @@ the app" section, replace the static phone render with:
   footage crisper for very large screens, the clips can be regenerated at a higher
   tier and the frames re-sliced (see project notes in the ProductBrain vault).
 
-## 8. Known limitations
+## 8. Performance / smoothness (don't regress these)
+The scroll was profiled in Chrome; these choices keep the film scroll at ~50–60fps.
+Re-introducing any of them drops it to ~20fps, so keep them if you port the page:
+- **No `mix-blend-mode` or animation on the full-screen `#grain` overlay.** That was
+  the #1 lag cause — blending a full-screen layer over the scrolling canvas forces a
+  recomposite every frame. Grain is now a static, plain-opacity texture.
+- **The food ring animation pauses when off-screen** (IntersectionObserver) so it
+  doesn't steal main-thread time during the film scroll. Any continuous rAF you add
+  must do the same.
+- **No per-frame paint-triggering styles in animation loops.** The ring writes only
+  transform/opacity/brightness per frame (GPU-cheap); the plate glow is a *static*
+  box-shadow (painted once, composited on transform). Avoid per-frame `box-shadow`.
+- **Film canvas** caps devicePixelRatio at 1.5 and **warm-decodes the opening ~90
+  frames** during load so the first scroll doesn't decode just-in-time.
+- General rule: profile with Chrome DevTools (the in-app preview suspends rAF and
+  can't measure fps). A rAF frame-timer during a scripted wheel-scroll is enough.
+
+## 9. Known limitations
 - CDN dependencies (GSAP, Lenis, Google Fonts) — vendor them for offline/enterprise.
 - The film is ~720p source; page UI/text is fully sharp.
-- `frames/` is ~20 MB (339 files); it loads progressively with a gated loader.
+- `frames/` is ~20 MB (339 files); it loads progressively with a gated loader. First
+  cold load is a little slower while frames download; cached/repeat visits are smooth.
 
 ## Quick checklist to go live in the app
 1. Serve the folder statically (or port sections per §3).
@@ -102,3 +120,5 @@ the app" section, replace the static phone render with:
 3. Swap CDN libs → npm; fonts → `next/font`.
 4. Wire the live-menu phone to real batch data (optional).
 5. Keep the phone UI as HTML/CSS — never an image.
+6. Keep the performance choices in §8 (grain static, ring pauses off-screen, no
+   per-frame box-shadow, warm-decode) or the scroll will jank again.
