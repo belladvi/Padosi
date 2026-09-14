@@ -679,7 +679,8 @@
 
   /* smooth scroll */
   let lenis=null;
-  const RECORD = location.search.indexOf('record')>-1;
+  window.__CAPTURE = location.search.indexOf('capture')>-1;
+  const RECORD = location.search.indexOf('record')>-1 || window.__CAPTURE;
   if(hasLenis && !reduce && !RECORD){
     lenis=new Lenis({ lerp:0.09, wheelMultiplier:1, smoothWheel:true });
     if(hasGSAP){ lenis.on('scroll', ScrollTrigger.update); gsap.ticker.add(t=>lenis.raf(t*1000)); gsap.ticker.lagSmoothing(0); }
@@ -736,40 +737,43 @@
     });
   }
 
-  /* 3D food ring: billboard carousel — dishes orbit in a circle but stay upright & crisp */
+  /* 3D food ring: billboard carousel. Runs ONLY while on-screen (so it never
+     steals main-thread time during the film scroll), and avoids per-frame paint
+     (no boxShadow thrash — the gold rim is static CSS, the centre glow is .ring-spot). */
   (function(){
     const ring=document.getElementById('ring'); if(!ring) return;
     const cards=[...ring.children]; const n=cards.length; const step=360/n; const R=430;
     const nmEl=document.getElementById('ringNm'), mtEl=document.getElementById('ringMt');
-    let rot=0, paused=false, last=performance.now(), frontIdx=-1;
     const scene=document.getElementById('ringScene');
+    let rot=0, paused=false, last=performance.now(), frontIdx=-1, running=false, visible=false;
     scene.addEventListener('pointerenter',()=>paused=true);
     scene.addEventListener('pointerleave',()=>paused=false);
-    function frame(now){
+    function draw(now){
       const dt=Math.min((now-last)/1000,0.05); last=now;
       if(!paused&&!reduce) rot=(rot+dt*7)%360;
+      const useRot = window.__CAPTURE ? (window.__ringRot||0) : rot; // deterministic in capture
       let bestCos=-2, best=0;
       cards.forEach((c,i)=>{
-        const a=i*step+rot, cos=Math.cos(a*Math.PI/180), depth=(cos+1)/2;
+        const a=i*step+useRot, cos=Math.cos(a*Math.PI/180), depth=(cos+1)/2;
         c.style.transform=`rotateY(${a}deg) translateZ(${R}px) rotateY(${-a}deg)`;
         c.style.opacity=(0.18+depth*0.82).toFixed(3);
-        c.style.filter=`brightness(${(0.55+depth*0.5).toFixed(2)}) saturate(${(0.85+depth*0.25).toFixed(2)})`;
-        c.style.zIndex=Math.round(depth*100);
+        c.style.filter=`brightness(${(0.62+depth*0.42).toFixed(2)})`; // transform+opacity+brightness only (GPU-cheap)
+        c.style.zIndex=(depth*100)|0;
         const disc=c.querySelector('.disc');
-        if(disc){
-          disc.style.transform=`scale(${(0.78+depth*0.32).toFixed(3)})`;
-          const g=depth*depth; // glow peaks sharply at centre
-          disc.style.boxShadow=`0 34px 70px -22px rgba(0,0,0,.9), 0 0 0 1px rgba(232,185,129,${(0.3+depth*0.55).toFixed(2)}), inset 0 0 0 3px rgba(255,255,255,.07), 0 0 ${Math.round(g*90)}px rgba(236,154,107,${(g*0.6).toFixed(2)}), 0 0 ${Math.round(g*40)}px rgba(232,185,129,${(g*0.45).toFixed(2)})`;
-        }
+        if(disc) disc.style.transform=`scale(${(0.8+depth*0.3).toFixed(3)})`;
         if(cos>bestCos){bestCos=cos;best=i;}
       });
       if(best!==frontIdx && nmEl){ frontIdx=best; const c=cards[best];
         nmEl.style.opacity=0; mtEl.style.opacity=0;
         setTimeout(()=>{ nmEl.innerHTML=c.dataset.nm; mtEl.textContent=c.dataset.mt; nmEl.style.opacity=1; mtEl.style.opacity=1; },150);
       }
-      requestAnimationFrame(frame);
+      if((visible||window.__CAPTURE) && running) requestAnimationFrame(draw); else running=false;
     }
-    requestAnimationFrame(frame);
+    function start(){ if(!running){ running=true; last=performance.now(); requestAnimationFrame(draw); } }
+    if(window.__CAPTURE){ visible=true; start(); }
+    else if('IntersectionObserver' in window){
+      new IntersectionObserver((es)=>{ es.forEach(e=>{ visible=e.isIntersecting; if(visible) start(); }); }, {threshold:0.01, rootMargin:'150px'}).observe(scene);
+    } else { visible=true; start(); }
   })();
 
   /* refresh ScrollTrigger after fonts/images settle */

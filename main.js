@@ -11,8 +11,8 @@ const loadbar = document.getElementById("loadbar");
 const scrollCue = document.getElementById("scroll-cue");
 const captions = [...document.querySelectorAll(".caption")];
 
-const KEEP = 120;      // evict decoded bitmaps further than this from the playhead
-const AHEAD = 30;      // decode this many frames ahead (scroll-direction weighted)
+const KEEP = 140;      // evict decoded bitmaps further than this from the playhead
+const AHEAD = 48;      // decode this many frames ahead (scroll-direction weighted)
 
 const state = {
   blobs: [],
@@ -104,7 +104,7 @@ async function preload() {
 /* ── drawing ───────────────────────────────────────────── */
 
 function resize() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5); // lighter canvas draws = smoother scrub
   canvas.width = Math.round(canvas.clientWidth * dpr);
   canvas.height = Math.round(canvas.clientHeight * dpr);
   state.current = -1;
@@ -177,6 +177,7 @@ function tick(now) {
     const k = 1 - Math.exp(-dt * 14);
     state.smooth += (state.target - state.smooth) * k;
     if (Math.abs(state.target - state.smooth) < 0.5) state.smooth = state.target;
+    if (window.__CAPTURE) state.smooth = state.target; // deterministic: exact frame per scroll
     const i = Math.round(state.smooth);
     manageWindow(i);
     if (i !== state.current) drawFrame(i);
