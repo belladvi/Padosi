@@ -32,7 +32,7 @@ because the engine `fetch()`es the frame manifest).
 | `main.js` | The scroll-film canvas engine (frame preload + scrub) |
 | `frames/` | 339 WebP frames + `frames.json` manifest (the film) |
 | `img/` | Section imagery + logo (`logo-icon.webp`, `logo-mark.webp`) + food-ring dishes |
-| `padosi-hero-4k.mp4` | 4K 16:9 walkthrough video of this page (for the waitlist etc.) |
+| `padosi-hero.mp4` | 2K 16:9 walkthrough video of this page (for the waitlist etc.) |
 | `HANDOFF.md` | How to integrate this into the product codebase |
 
 See **HANDOFF.md** for integration guidance.

@@ -74,11 +74,11 @@ Defined as CSS variables at the top of `index.html` (`:root`):
   bowl + steam-roof render for large/hero use). Favicon uses `logo-icon.webp`.
 
 ## 6. The walkthrough video
-`padosi-hero-4k.mp4` — 4K 16:9, ~65s, a screen-recording of this page ending on the
-live app, with an original (copyright-free) soundtrack. For the waitlist "A peek at the
-app" section, replace the static phone render with:
+`padosi-hero.mp4` — 2K 16:9, ~45s, a frame-perfect walkthrough of this page ending on
+the live app, with an original (copyright-free) soundtrack. For the waitlist "A peek at
+the app" section, replace the static phone render with:
 ```html
-<video src="padosi-hero-4k.mp4" autoplay muted loop playsinline preload="metadata"
+<video src="padosi-hero.mp4" autoplay muted loop playsinline preload="metadata"
        style="width:100%;border-radius:20px"></video>
 ```
 (Autoplay must be muted; add a mute/unmute control if you want the music audible.)
